@@ -76,11 +76,12 @@ class BotPodCreator:
                         command=command,
                         resources=client.V1ResourceRequirements(
                             requests={
-                                "cpu": bot_cpu_request,
+                                "cpu": "1",
                                 "memory": os.getenv("BOT_MEMORY_REQUEST", "4Gi"),
                                 "ephemeral-storage": os.getenv("BOT_EPHEMERAL_STORAGE_REQUEST", "10Gi")
                             },
                             limits={
+                                "cpu": "1",
                                 "memory": os.getenv("BOT_MEMORY_LIMIT", "4Gi"),
                                 "ephemeral-storage": os.getenv("BOT_EPHEMERAL_STORAGE_LIMIT", "10Gi")
                             }
