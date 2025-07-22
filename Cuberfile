@@ -16,8 +16,8 @@ end
 # Create RBAC resources for pod creation
 # We don't need to run this with each deployment!!!!!!
 puts("Creating RBAC resources for pod creation...")
-`kubectl create role pod-creator --verb=create,get,list,delete,watch --resource=pods --namespace=wrapper-bot --dry-run=client -o yaml | kubectl apply -f -`
-`kubectl create rolebinding pod-creator-binding --role=pod-creator --serviceaccount=attendee:default --namespace=wrapper-bot --dry-run=client -o yaml | kubectl apply -f -`
+`kubectl create role pod-creator --verb=create,get,list,delete,watch --resource=pods --namespace=attendee --dry-run=client -o yaml | kubectl apply -f -`
+`kubectl create rolebinding pod-creator-binding --role=pod-creator --serviceaccount=attendee:default --namespace=attendee --dry-run=client -o yaml | kubectl apply -f -`
 
 # Give a name to your app
 app 'attendee'
