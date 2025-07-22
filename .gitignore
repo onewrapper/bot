@@ -93,3 +93,44 @@ local_settings.py
 
 .env
 db.sqlite3
+
+.cuber/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.log
+
+# Cuber
+.cuber/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+terraform.tfvars.json
+
+# Kubernetes
+*.yaml
+!k8s/*.yaml        # Optionally allow versioned k8s YAML if stored in k8s/ directory
+
+# Secrets / Env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

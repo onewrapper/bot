@@ -2,7 +2,7 @@ import dj_database_url
 
 from .base import *
 
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
@@ -39,7 +39,11 @@ ADMINS = []
 
 SERVER_EMAIL = "noreply@mail.attendee.dev"
 
-CSRF_TRUSTED_ORIGINS = ["https://*.attendee.dev"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.attendee.dev",
+    "https://*.onewrapper.com",
+    "https://bot.onewrapper.com",
+]
 
 # Log more stuff in staging
 LOGGING = {

@@ -49,7 +49,11 @@ if os.getenv("ERROR_REPORTS_RECEIVER_EMAIL_ADDRESS"):
 SERVER_EMAIL = "noreply@mail.attendee.dev"
 
 # Needed on GKE
-CSRF_TRUSTED_ORIGINS = ["https://*.attendee.dev"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.attendee.dev",
+    "https://*.onewrapper.com",
+    "https://bot.onewrapper.com",
+]
 
 # Log more stuff in staging
 LOGGING = {
