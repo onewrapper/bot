@@ -33,7 +33,8 @@ resource "aws_subnet" "public" {
   tags = {
     Name                         = "public-${each.key}"
     "kubernetes.io/role/elb"     = "1"
-    "kubernetes.io/cluster/demo" = "shared"
+    "kubernetes.io/cluster/wrapper-bot-cluster" = "shared"
+    "karpenter.sh/discovery" = "wrapper-bot-cluster"
   }
 }
 
@@ -45,7 +46,8 @@ resource "aws_subnet" "app" {
   tags = {
     Name                              = "app-${each.key}"
     "kubernetes.io/role/internal-elb" = "1"
-    "kubernetes.io/cluster/demo"      = "shared"
+    "kubernetes.io/cluster/wrapper-bot-cluster" = "shared"
+    "karpenter.sh/discovery" = "wrapper-bot-cluster"
   }
 }
 
