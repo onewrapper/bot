@@ -260,6 +260,13 @@ class RTMPSettingsJSONField(serializers.JSONField):
                 "description": "The resolution to use for the recording. The supported resolutions are '1080p' and '720p'. Defaults to '1080p'.",
                 "enum": RecordingResolutions.values,
             },
+            "upload_path": {
+                "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}},
+                ],
+                "description": "Optional path prefix inside the S3 bucket where the recording file will be uploaded. Can be a string (e.g. 'client_a/recordings/') or an array of path segments (e.g. ['organizations', 'org_123', 'users', 'user_456']). Must represent a relative path (no leading slash).",
+            },
         },
         "required": [],
     }
@@ -856,6 +863,13 @@ class CreateBotSerializer(serializers.Serializer):
                 "type": "string",
                 "enum": list(RecordingResolutions.values),
             },
+            "upload_path": {
+                "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}},
+                ],
+                "description": "Optional path prefix inside the S3 bucket where the recording file will be uploaded. Can be a string (e.g. 'client_a/recordings/') or an array of path segments (e.g. ['organizations', 'org_123', 'users', 'user_456']). Must represent a relative path (no leading slash).",
+            },
         },
         "required": [],
     }
@@ -866,6 +880,11 @@ class CreateBotSerializer(serializers.Serializer):
 
         # Define defaults
         defaults = {"format": RecordingFormats.MP4, "view": RecordingViews.SPEAKER_VIEW, "resolution": RecordingResolutions.HD_1080P}
+
+        # Convert upload_path array to string if needed before schema validation
+        if value is not None and "upload_path" in value and isinstance(value["upload_path"], list):
+            # Join path segments with slash
+            value["upload_path"] = "/".join(segment.strip("/") for segment in value["upload_path"] if segment)
 
         try:
             jsonschema.validate(instance=value, schema=self.RECORDING_SETTINGS_SCHEMA)
@@ -887,6 +906,20 @@ class CreateBotSerializer(serializers.Serializer):
         view = value.get("view")
         if view not in [RecordingViews.SPEAKER_VIEW, RecordingViews.GALLERY_VIEW, None]:
             raise serializers.ValidationError({"view": "View must be speaker_view or gallery_view"})
+
+        # Validate upload_path if provided
+        upload_path = value.get("upload_path")
+        if upload_path is not None:
+            if not isinstance(upload_path, (str, list)):
+                raise serializers.ValidationError({"upload_path": "upload_path must be a string or an array"})
+            if isinstance(upload_path, list):
+                if any(not isinstance(item, str) for item in upload_path):
+                    raise serializers.ValidationError({"upload_path": "upload_path array items must be strings"})
+                if any(item.startswith("/") for item in upload_path):
+                    raise serializers.ValidationError({"upload_path": "upload_path array items must be relative paths"})
+            elif isinstance(upload_path, str):
+                if upload_path.startswith("/"):
+                    raise serializers.ValidationError({"upload_path": "upload_path must be a relative path and must not start with a '/'"})
 
         return value
 
@@ -1179,10 +1212,11 @@ class TranscriptUtteranceSerializer(serializers.Serializer):
 )
 class RecordingSerializer(serializers.ModelSerializer):
     start_timestamp_ms = serializers.IntegerField(source="first_buffer_timestamp_ms")
+    thumbnail_url = serializers.CharField(source="thumbnail_url", allow_null=True)
 
     class Meta:
         model = Recording
-        fields = ["url", "start_timestamp_ms"]
+        fields = ["url", "thumbnail_url", "start_timestamp_ms"]
 
 
 @extend_schema_field(

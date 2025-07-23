@@ -12,17 +12,17 @@ class BotPodCreator:
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-        
+
         self.v1 = client.CoreV1Api()
         self.namespace = namespace
-        
+
         # Get configuration from environment variables
         self.app_name = os.getenv('CUBER_APP_NAME', 'attendee')
         self.app_version = os.getenv('CUBER_RELEASE_VERSION')
-        
+
         if not self.app_version:
             raise ValueError("CUBER_RELEASE_VERSION environment variable is required")
-            
+
         # Parse instance from version (matches your pattern of {hash}-{timestamp})
         self.app_instance = f"{self.app_name}-{self.app_version.split('-')[-1]}"
         default_pod_image = "public.ecr.aws/s2q9r5u7/wrapper/bot"
@@ -36,7 +36,7 @@ class BotPodCreator:
     ) -> Dict:
         """
         Create a bot pod with configuration from environment.
-        
+
         Args:
             bot_id: Integer ID of the bot to run
             bot_name: Optional name for the bot (will generate if not provided)
@@ -77,12 +77,12 @@ class BotPodCreator:
                         resources=client.V1ResourceRequirements(
                             requests={
                                 "cpu": "1",
-                                "memory": os.getenv("BOT_MEMORY_REQUEST", "4Gi"),
+                                "memory": "2Gi",
                                 "ephemeral-storage": os.getenv("BOT_EPHEMERAL_STORAGE_REQUEST", "10Gi")
                             },
                             limits={
-                                "cpu": "1",
-                                "memory": os.getenv("BOT_MEMORY_LIMIT", "4Gi"),
+                                "cpu": "4",
+                                "memory": "4Gi",
                                 "ephemeral-storage": os.getenv("BOT_EPHEMERAL_STORAGE_LIMIT", "10Gi")
                             }
                         ),
@@ -133,7 +133,7 @@ class BotPodCreator:
                 namespace=self.namespace,
                 body=pod
             )
-            
+
             return {
                 "name": api_response.metadata.name,
                 "status": api_response.status.phase,
@@ -142,7 +142,7 @@ class BotPodCreator:
                 "app_instance": self.app_instance,
                 "app_version": self.app_version
             }
-            
+
         except client.ApiException as e:
             return {
                 "name": bot_name,

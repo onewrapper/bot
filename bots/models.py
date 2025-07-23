@@ -1214,6 +1214,20 @@ class Recording(models.Model):
 
     file = models.FileField(storage=RecordingStorage())
 
+    # Image extracted from the first few frames of the recording (PNG/JPG) uploaded to the same S3 bucket
+    thumbnail = models.FileField(storage=RecordingStorage(), null=True, blank=True)
+
+    @property
+    def thumbnail_url(self):
+        """Return a short-lived presigned URL for the thumbnail image or None if not available."""
+        if not self.thumbnail.name:
+            return None
+        return self.thumbnail.storage.bucket.meta.client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self.thumbnail.storage.bucket_name, "Key": self.thumbnail.name},
+            ExpiresIn=1800,
+        )
+
     def __str__(self):
         return f"Recording for {self.bot.object_id}"
 
