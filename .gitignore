@@ -134,7 +134,3 @@ terraform.tfvars.json
 # OS
 .DS_Store
 Thumbs.db
-<<<<<<< Updated upstream
-=======
- 
->>>>>>> Stashed changes
