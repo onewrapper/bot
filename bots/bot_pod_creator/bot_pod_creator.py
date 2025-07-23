@@ -127,6 +127,22 @@ class BotPodCreator:
                         key="CriticalAddonsOnly",
                         operator="Exists",
                         effect="NoSchedule"  # Allow scheduling on Karpenter nodes with CriticalAddonsOnly taint
+                    ),
+                    # Karpenter-specific tolerations for node lifecycle management
+                    client.V1Toleration(
+                        key="karpenter.sh/disrupted",
+                        operator="Exists",
+                        effect="NoSchedule"  # Allow scheduling on nodes being disrupted
+                    ),
+                    client.V1Toleration(
+                        key="karpenter.sh/unregistered",
+                        operator="Exists",
+                        effect="NoSchedule"  # Allow scheduling on unregistered nodes
+                    ),
+                    client.V1Toleration(
+                        key="node.cloudprovider.kubernetes.io/uninitialized",
+                        operator="Exists",
+                        effect="NoSchedule"  # Allow scheduling on uninitializing nodes
                     )
                 ]
             )
