@@ -320,8 +320,8 @@ class BotController:
             if not upload_path.endswith("/"):
                 upload_path += "/"
 
-        # Use .jpg extension for the thumbnail
-        return f"{upload_path}{self.bot_in_db.object_id}-{recording.object_id}.jpg"
+        # Always save thumbnail as thumbnail.jpg within the (optional) upload_path
+        return f"{upload_path}thumbnail.jpg"
 
     def thumbnail_file_saved(self, s3_storage_key):
         recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
@@ -347,7 +347,8 @@ class BotController:
             if not upload_path.endswith("/"):
                 upload_path += "/"
 
-        return f"{upload_path}{self.bot_in_db.object_id}-{recording.object_id}.{self.bot_in_db.recording_format()}"
+        # Save as a fixed filename 'recording.<ext>' within the optional path
+        return f"{upload_path}recording.{self.bot_in_db.recording_format()}"
 
     def on_rtmp_connection_failed(self):
         logger.info("RTMP connection failed")

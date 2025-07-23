@@ -1212,7 +1212,7 @@ class TranscriptUtteranceSerializer(serializers.Serializer):
 )
 class RecordingSerializer(serializers.ModelSerializer):
     start_timestamp_ms = serializers.IntegerField(source="first_buffer_timestamp_ms")
-    thumbnail_url = serializers.CharField(source="thumbnail_url", allow_null=True)
+    thumbnail_url = serializers.CharField(allow_null=True, read_only=True)
 
     class Meta:
         model = Recording
