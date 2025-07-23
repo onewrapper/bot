@@ -122,6 +122,11 @@ class BotPodCreator:
                         operator="Exists",
                         effect="NoExecute",
                         toleration_seconds=900  # Tolerate unreachable nodes for 15 minutes
+                    ),
+                    client.V1Toleration(
+                        key="CriticalAddonsOnly",
+                        operator="Exists",
+                        effect="NoSchedule"  # Allow scheduling on Karpenter nodes with CriticalAddonsOnly taint
                     )
                 ]
             )
