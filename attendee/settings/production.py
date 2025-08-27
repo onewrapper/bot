@@ -46,3 +46,10 @@ if os.getenv("ERROR_REPORTS_RECEIVER_EMAIL_ADDRESS"):
     )
 
 SERVER_EMAIL = "noreply@mail.attendee.dev"
+
+# Allow bot.onewrapper.com in production too
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.attendee.dev",
+    "https://*.onewrapper.com",
+    "https://bot.onewrapper.com",
+]

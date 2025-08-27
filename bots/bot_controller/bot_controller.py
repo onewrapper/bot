@@ -302,13 +302,53 @@ class BotController:
         recording.first_buffer_timestamp_ms = self.get_first_buffer_timestamp_ms()
         recording.save()
 
+    # ----------------------------------
+    # Thumbnail helpers
+    # ----------------------------------
+    def get_thumbnail_filename(self):
+        """Return the S3 key for the thumbnail file (.jpg) accompanying the recording."""
+        recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
+
+        upload_path = self.bot_in_db.settings.get("recording_settings", {}).get("upload_path", "")
+
+        # If upload_path is a list, join the segments
+        if isinstance(upload_path, list):
+            upload_path = "/".join(segment.strip("/") for segment in upload_path if segment)
+
+        if upload_path:
+            upload_path = upload_path.lstrip("/")
+            if not upload_path.endswith("/"):
+                upload_path += "/"
+
+        # Always save thumbnail as thumbnail.jpg within the (optional) upload_path
+        return f"{upload_path}thumbnail.jpg"
+
+    def thumbnail_file_saved(self, s3_storage_key):
+        recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
+        recording.thumbnail = s3_storage_key
+        recording.save()
+
     def get_recording_transcription_provider(self):
         recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
         return recording.transcription_provider
 
     def get_recording_filename(self):
         recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
-        return f"{self.bot_in_db.object_id}-{recording.object_id}.{self.bot_in_db.recording_format()}"
+        # Determine if a custom upload path has been provided
+        upload_path = self.bot_in_db.settings.get("recording_settings", {}).get("upload_path", "")
+
+        # If upload_path is a list, join the segments
+        if isinstance(upload_path, list):
+            upload_path = "/".join(segment.strip("/") for segment in upload_path if segment)
+
+        if upload_path:
+            # Ensure the path does not start with a slash and always ends with one
+            upload_path = upload_path.lstrip("/")
+            if not upload_path.endswith("/"):
+                upload_path += "/"
+
+        # Save as a fixed filename 'recording.<ext>' within the optional path
+        return f"{upload_path}recording.{self.bot_in_db.recording_format()}"
 
     def on_rtmp_connection_failed(self):
         logger.info("RTMP connection failed")
@@ -380,16 +420,57 @@ class BotController:
             logger.info("Telling websocket audio client to cleanup...")
             self.websocket_audio_client.cleanup()
 
-        if self.get_recording_file_location():
+        recording_file_path = self.get_recording_file_location()
+
+        # Generate and upload thumbnail for video recordings before we upload/delete the recording file
+        if (
+            recording_file_path
+            and self.bot_in_db.recording_type() == RecordingTypes.AUDIO_AND_VIDEO
+            and os.path.exists(recording_file_path)
+        ):
+            try:
+                import tempfile
+                import subprocess
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_thumb:
+                    thumbnail_local_path = tmp_thumb.name
+
+                # Extract the very first frame as a JPEG thumbnail
+                ffmpeg_cmd = [
+                    "ffmpeg",
+                    "-y",  # overwrite if exists
+                    "-i",
+                    recording_file_path,
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "2",
+                    thumbnail_local_path,
+                ]
+                subprocess.run(ffmpeg_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+                thumb_uploader = FileUploader(
+                    os.environ.get("AWS_RECORDING_STORAGE_BUCKET_NAME"),
+                    self.get_thumbnail_filename(),
+                )
+                thumb_uploader.upload_file(thumbnail_local_path)
+                thumb_uploader.wait_for_upload()
+                thumb_uploader.delete_file(thumbnail_local_path)
+                self.thumbnail_file_saved(thumb_uploader.key)
+                logger.info("Thumbnail generated and uploaded")
+            except Exception as e:
+                logger.error(f"Failed to generate/upload thumbnail: {e}")
+
+        if recording_file_path:
             logger.info("Telling file uploader to upload recording file...")
             file_uploader = FileUploader(
                 os.environ.get("AWS_RECORDING_STORAGE_BUCKET_NAME"),
                 self.get_recording_filename(),
             )
-            file_uploader.upload_file(self.get_recording_file_location())
+            file_uploader.upload_file(recording_file_path)
             file_uploader.wait_for_upload()
             logger.info("File uploader finished uploading file")
-            file_uploader.delete_file(self.get_recording_file_location())
+            file_uploader.delete_file(recording_file_path)
             logger.info("File uploader deleted file from local filesystem")
             self.recording_file_saved(file_uploader.key)
 

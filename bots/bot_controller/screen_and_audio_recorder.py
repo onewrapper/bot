@@ -17,6 +17,8 @@ class ScreenAndAudioRecorder:
         self.xterm_proc = None
 
     def start_recording(self, display_var):
+        # Ensure the parent directory exists before ffmpeg tries to write the file
+        os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         logger.info(f"Starting screen recorder for display {display_var} with dimensions {self.screen_dimensions} and file location {self.file_location}")
 
         if self.audio_only:
@@ -99,6 +101,9 @@ class ScreenAndAudioRecorder:
 
     def cleanup(self):
         input_path = self.file_location
+
+        # Ensure the parent directory exists so we can create the placeholder file if needed
+        os.makedirs(os.path.dirname(input_path), exist_ok=True)
 
         # Check if input file exists
         if not os.path.exists(input_path):
